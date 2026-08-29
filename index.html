@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0E11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bảng lương">
+<title>Bảng lương</title>
+<style>
+  :root{
+    --bg:#0B0E11; --card:#181A20; --card2:#1E2329; --line:#2B3139;
+    --gold:#F0B90B; --gold2:#FCD535; --ink:#EAECEF; --sub:#B7BDC6; --muted:#848E9C;
+    --green:#0ECB81; --red:#F6465D; --dark:#181A20;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{color-scheme:dark}
+  body{margin:0;background:var(--bg);color:var(--ink);touch-action:manipulation;
+       font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;
+       padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+  .wrap{max-width:520px;margin:0 auto;padding:0 14px}
+
+  /* ===== header ===== */
+  .top{position:sticky;top:0;z-index:30;background:rgba(11,14,17,.92);backdrop-filter:blur(12px);
+       -webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+       padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+  .brand{display:flex;align-items:center;justify-content:space-between;max-width:520px;margin:0 auto}
+  .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;letter-spacing:.2px}
+  .logo .dot{width:14px;height:14px;background:var(--gold);transform:rotate(45deg);border-radius:3px}
+  .helpbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card2);
+           color:var(--gold);font-weight:800;font-size:16px;cursor:pointer}
+  .monthbar{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px auto 0;max-width:520px}
+  .navbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card2);
+          color:var(--gold);font-size:22px;font-weight:800;cursor:pointer}
+  .navbtn:active{background:#262b33}
+  .mtitle{font-size:17px;font-weight:800;display:flex;align-items:center;gap:6px}
+  .mtitle input{background:var(--card2);border:1px solid var(--line);border-radius:10px;color:var(--gold);
+                font-size:17px;font-weight:800;text-align:center;padding:8px 2px}
+  #mIn{width:56px} #yIn{width:76px}
+
+  /* ===== net card ===== */
+  .netcard{margin-top:14px;background:linear-gradient(160deg,#1E2329,#15181d);border:1px solid var(--line);
+           border-radius:18px;padding:18px 16px 14px;position:relative;overflow:hidden}
+  .netcard::after{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;
+           background:radial-gradient(circle,rgba(240,185,11,.16),transparent 70%)}
+  .netlbl{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.6px}
+  .netval{font-size:34px;font-weight:800;color:var(--gold);margin:6px 0 12px;font-variant-numeric:tabular-nums}
+  .netval small{font-size:18px;color:var(--gold2)}
+  .ministats{display:flex;border-top:1px solid var(--line);padding-top:12px;gap:8px}
+  .ms{flex:1;min-width:0}
+  .ms .k{font-size:11px;color:var(--muted)}
+  .ms .v{font-size:14px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+  .ms .v.red{color:var(--red)} .ms .v.green{color:var(--green)}
+  .detbtn{margin-top:12px;width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);
+          background:transparent;color:var(--sub);font-size:13px;font-weight:700;cursor:pointer}
+  .breakdown{display:none;margin-top:8px}
+  .breakdown.open{display:block}
+  .brow{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px dashed #262b33;font-size:14px}
+  .brow:last-child{border-bottom:0}
+  .brow .k{color:var(--muted)} .brow .v{font-weight:700;font-variant-numeric:tabular-nums}
+
+  .offnote{margin:10px 2px 0;font-size:12.5px;color:var(--red);line-height:1.5}
+
+  /* ===== day list ===== */
+  .listcard{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .listhead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card2);
+            border-bottom:1px solid var(--line)}
+  .listhead .t{font-size:14px;font-weight:800;color:var(--gold)}
+  .listhead .h{font-size:11px;color:var(--muted);text-align:right}
+  .day{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #20242b;min-height:60px}
+  .day:last-child{border-bottom:0}
+  .day.sun{opacity:.45}
+  .dinfo{width:58px;flex:0 0 auto}
+  .dinfo .dd{font-weight:800;font-size:16px}
+  .dinfo .wd{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .ck{display:flex;gap:10px;flex:0 0 auto}
+  .ck label{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted);font-weight:700}
+  .ck input{-webkit-appearance:none;appearance:none;width:30px;height:30px;margin:0;border:1.5px solid #3a4149;
+            border-radius:9px;background:var(--card2);cursor:pointer;transition:all .12s}
+  .ck input:checked{background:var(--gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23181A20' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' d='M4 12.5l5.5 5.5L20 6.5'/%3E%3C/svg%3E") center/17px no-repeat;
+            border-color:var(--gold)}
+  .more{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .st{font-size:11px;font-weight:800;padding:4px 9px;border-radius:20px;white-space:nowrap}
+  .st.lam{background:rgba(14,203,129,.12);color:var(--green)}
+  .st.off{background:rgba(246,70,93,.12);color:var(--red)}
+  .st.half{background:rgba(240,185,11,.14);color:var(--gold)}
+  .st.cn{background:#23272e;color:var(--muted)}
+  .exp{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card2);
+       color:var(--sub);font-size:16px;cursor:pointer}
+  .detail{display:none;padding:4px 14px 14px 82px;background:#14171c;border-bottom:1px solid #20242b}
+  .detail.open{display:block}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .fgrid label{font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px;font-weight:700}
+  .fgrid input{padding:10px;border:1px solid #39414C;border-radius:10px;font-size:16px;background:var(--card2);color:var(--ink);width:100%}
+  .twrap{position:relative;display:block}
+  .twrap input{width:100%}
+  .tph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+       color:#5A6470;font-size:16px;font-weight:700;pointer-events:none}
+  .twrap.filled .tph{display:none}
+  .fgrid input:focus{outline:none;border-color:var(--gold)}
+  input[type=time]{min-height:46px;text-align:center}
+  input[type="time"]::-webkit-date-and-time-value{text-align:center;margin:0}
+  .otbtn{flex:1;min-width:64px;max-width:160px;height:36px;border-radius:10px;border:1px dashed #3a4149;
+         background:transparent;color:var(--muted);font-size:12px;font-weight:800;cursor:pointer;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
+  .otbtn.on{background:rgba(240,185,11,.14);border:1px solid var(--gold);color:var(--gold)}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .pchip{padding:10px 12px;border-radius:20px;border:1px solid var(--line);background:var(--card2);
+         color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer}
+  .pchip:active{background:var(--gold);color:var(--dark);border-color:var(--gold)}
+  .dtitle{font-size:11.5px;color:var(--muted);font-weight:800;margin-top:8px;letter-spacing:.3px}
+
+  /* ===== bottom bar ===== */
+  .bottombar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;
+             padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+             background:rgba(11,14,17,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+             border-top:1px solid var(--line)}
+  .bottombar .inner{display:flex;gap:10px;max-width:520px;margin:0 auto;width:100%}
+  .bbtn{flex:1;padding:13px 8px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;border:1px solid var(--line)}
+  .bbtn.ghost{background:var(--card2);color:var(--ink)}
+  .bbtn.gold{background:var(--gold);color:var(--dark);border-color:var(--gold)}
+  .bbtn:active{opacity:.8}
+
+  /* ===== toast ===== */
+  .toast{position:fixed;top:calc(66px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+         background:var(--card2);border:1px solid var(--gold);color:var(--gold);font-size:12.5px;font-weight:700;
+         padding:7px 14px;border-radius:20px;opacity:0;transition:opacity .25s;z-index:40;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* ===== modal (bottom sheet) ===== */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-end;z-index:50}
+  .modal.open{display:flex}
+  .sheet{background:var(--card2);width:100%;max-width:520px;margin:0 auto;border-radius:20px 20px 0 0;
+         padding:8px 18px calc(20px + env(safe-area-inset-bottom));max-height:82vh;overflow:auto;
+         border:1px solid var(--line);border-bottom:0}
+  .grab{width:44px;height:5px;border-radius:3px;background:#3a4149;margin:6px auto 14px}
+  .sheet h3{margin:0 0 4px;font-size:17px;color:var(--gold)}
+  .sheet .note{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sgrid label{font-size:12px;color:var(--sub);display:flex;flex-direction:column;gap:5px;font-weight:700}
+  .sgrid input{padding:12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:var(--card);color:var(--gold);font-weight:700}
+  .sgrid input:focus{outline:none;border-color:var(--gold)}
+  .closebtn{margin-top:16px;width:100%;padding:14px;border-radius:12px;border:0;background:var(--gold);
+            color:var(--dark);font-size:15px;font-weight:800;cursor:pointer}
+  .guide{font-size:14px;line-height:1.65;color:var(--sub)}
+  .guide b{color:var(--ink)}
+  .guide .step{display:flex;gap:10px;margin-bottom:12px}
+  .guide .n{flex:0 0 auto;width:24px;height:24px;border-radius:8px;background:rgba(240,185,11,.15);
+            color:var(--gold);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .seg{display:flex;gap:8px;margin-bottom:10px}
+  .segbtn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+          color:var(--sub);font-size:14px;font-weight:800;cursor:pointer}
+  .segbtn.active{background:var(--gold);color:var(--dark);border-color:var(--gold)}
+  .modehint{font-size:11.5px;color:var(--muted);margin:2px 0 12px;line-height:1.5}
+  .modehint b{color:var(--gold)}
+  .guide .formula{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+            font-size:12.5px;margin-top:4px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand">
+    <div class="logo"><span class="dot"></span> Bảng lương</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="saveBadge" style="font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:20px;background:#23272e;color:#848E9C">…</span>
+      <button class="helpbtn" id="btnHelp">?</button>
+    </div>
+  </div>
+  <div class="monthbar">
+    <button class="navbtn" id="prev">‹</button>
+    <div class="mtitle">Th<input id="mIn" type="number" inputmode="numeric" min="1" max="12"> / <input id="yIn" type="number" inputmode="numeric"></div>
+    <button class="navbtn" id="next">›</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="netcard">
+    <div class="netlbl" id="netlbl">THỰC LÃNH · THÁNG --</div>
+    <div class="netval" id="netval">0 <small>đ</small></div>
+    <div class="ministats">
+      <div class="ms"><div class="k">Tổng lương</div><div class="v" id="msGross">–</div></div>
+      <div class="ms"><div class="k">BHXH</div><div class="v red" id="msBhxh">–</div></div>
+      <div class="ms"><div class="k">Giờ tăng ca</div><div class="v green" id="msOt">–</div></div>
+    </div>
+    <button class="detbtn" id="btnDet">Xem chi tiết ▾</button>
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+  <div class="offnote" id="offlist"></div>
+
+  <div class="listcard">
+    <div class="listhead">
+      <div class="t">Chấm công</div>
+      <div class="h">Mặc định đủ công T2–T7<br>chỉ sửa ngày ngoại lệ</div>
+    </div>
+    <div id="days"></div>
+  </div>
+</div>
+
+<div class="bottombar"><div class="inner">
+  <button class="bbtn ghost" id="btnSet" style="flex:0 0 54px">⚙︎</button>
+  <button class="bbtn ghost" id="btnFull">Đủ công</button>
+  <button class="bbtn ghost" id="btnData">Sao lưu</button>
+  <button class="bbtn gold" id="btnCsv">CSV</button>
+</div></div>
+
+<div class="toast" id="toast">✓ Đã lưu</div>
+
+<!-- Settings sheet -->
+<div class="modal" id="setModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>⚙︎ Cài đặt tháng <span id="setMonthLbl"></span></h3>
+    <div class="note">Lưu riêng cho từng tháng — tăng lương / đổi % BHXH tháng nào thì mở tháng đó sửa.</div>
+    <div class="seg">
+      <button type="button" class="segbtn" id="modeThang">Lương tháng</button>
+      <button type="button" class="segbtn" id="modeGio">Tính theo giờ</button>
+    </div>
+    <div class="modehint" id="modeHint"></div>
+    <div class="sgrid">
+      <label id="f_luong">Lương tháng (đ)<input id="s_luong" type="number" inputmode="numeric"></label>
+      <label id="f_gio" style="display:none">Đơn giá giờ thường (đ)<input id="s_gio" type="number" inputmode="numeric"></label>
+      <label>Đơn giá tăng ca /giờ (đ)<input id="s_tc" type="number" inputmode="numeric"></label>
+      <label>Căn cứ đóng BHXH (đ)<input id="s_base" type="number" inputmode="numeric"></label>
+      <label>Tỷ lệ BHXH (%)<input id="s_rate" type="number" inputmode="decimal" step="0.1"></label>
+      <label>TC mặc định — từ<input id="s_otf" type="time"></label>
+      <label>TC mặc định — đến<input id="s_ott" type="time"></label>
+    </div>
+    <div class="modehint">Giai đoạn chưa đóng BHXH → đặt <b>Căn cứ = 0</b>.</div>
+    <button class="closebtn" data-close="setModal">Xong</button>
+  </div>
+</div>
+
+<!-- Data sheet -->
+<div class="modal" id="dataModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>💾 Sao lưu &amp; khôi phục</h3>
+    <div class="note" id="storStatus"></div>
+    <button class="bbtn ghost" id="btnMakeBk" style="width:100%;margin-bottom:10px">Tạo mã sao lưu (tất cả các tháng)</button>
+    <textarea id="bkArea" placeholder="Mã sao lưu sẽ hiện ở đây.&#10;Hoặc dán mã cũ vào đây rồi bấm Khôi phục." style="width:100%;min-height:120px;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--ink);font-size:12px;padding:10px;font-family:ui-monospace,Menlo,monospace"></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="bbtn ghost" id="btnCopyBk">Chép mã</button>
+      <button class="bbtn ghost" id="btnDlBk">Tải file .json</button>
+    </div>
+    <button class="bbtn gold" id="btnRestore" style="width:100%;margin-top:10px">Khôi phục từ mã trong khung</button>
+    <button class="closebtn" data-close="dataModal" style="background:var(--card);color:var(--sub);border:1px solid var(--line)">Đóng</button>
+  </div>
+</div>
+
+<!-- Help sheet -->
+<div class="modal" id="helpModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Hướng dẫn sử dụng</h3>
+    <div class="note">Đọc 1 lần là dùng được cả năm 👇</div>
+    <div class="guide">
+      <div class="step"><div class="n">1</div><div><b>Chuyển tháng:</b> bấm <b>‹ ›</b> hoặc chạm vào số tháng/năm để gõ. Mỗi tháng được lưu riêng — chuyển qua lại <b>không mất dữ liệu</b>.</div></div>
+      <div class="step"><div class="n">2</div><div><b>Chấm công:</b> mặc định app đã tick đủ công T2–T7. Ngày nghỉ → bỏ tick <b>S</b> (ca sáng) hoặc <b>C</b> (ca chiều). Bỏ cả hai = off nguyên ngày. Chủ nhật tự nghỉ.</div></div>
+      <div class="step"><div class="n">3</div><div><b>Tăng ca (1 chạm):</b> ngày nào có TC → bấm nút <b>＋ TC</b> cạnh checkbox, app áp luôn khung mặc định <b>17:00–21:00</b> (đổi trong ⚙︎). Khác khung → bấm lại nút TC để mở chọn nhanh (2h/3h/4h/5h) hoặc chỉnh giờ tay. Ngày không TC thì khỏi đụng gì.</div></div>
+      <div class="step"><div class="n">3b</div><div><b>Đi trễ / về sớm (ít dùng):</b> bấm <b>⋯</b> của ngày đó, nhập số phút — app tự trừ theo giờ.</div></div>
+      <div class="step"><div class="n">4</div><div><b>Cài đặt ⚙︎:</b> lương tháng, đơn giá tăng ca, căn cứ &amp; % BHXH. Lưu theo từng tháng, nên tăng lương từ tháng nào chỉ cần sửa từ tháng đó.</div></div>
+      <div class="step"><div class="n">5</div><div><b>Cách tính lương:</b>
+        <div class="formula">Đơn giá 1 giờ = Lương tháng ÷ (ngày công chuẩn × 8h)<br>
+        Lương chính = giờ làm thực tế × đơn giá giờ<br>
+        Lương tăng ca = giờ TC × đơn giá TC<br>
+        Thực lãnh = (Lương chính + Lương TC) − BHXH</div>
+        Nhờ tính theo giờ nên nghỉ nửa ngày, đi trễ, về sớm đều tự trừ chính xác.</div></div>
+      <div class="step"><div class="n">6</div><div><b>Nhập tháng cũ (trả theo giờ):</b> chuyển về tháng đó → <b>⚙︎ Cài đặt</b> → chọn <b>"Tính theo giờ"</b> → nhập đơn giá (vd 30.000đ), Căn cứ BHXH = 0 nếu chưa đóng. Từ tháng có lương cứng thì để chế độ "Lương tháng".</div></div>
+      <div class="step"><div class="n">7</div><div><b>Đèn lưu 💾:</b> góc trên hiện <b style="color:#0ECB81">"Tự lưu: Claude"</b> hoặc <b style="color:#0ECB81">"Tự lưu: thiết bị"</b> = mọi thứ tự lưu, khỏi lo. Hiện <b style="color:#F6465D">"Chỉ lưu phiên này"</b> = máy không tự lưu được → cách triệt để là đưa app lên web rồi <b>Safari → Chia sẻ → Thêm vào Màn hình chính</b> (app sẽ tự lưu vĩnh viễn như app thật); tạm thời dùng nút <b>Sao lưu</b>.</div></div>
+      <div class="step"><div class="n">8</div><div><b>Lưu &amp; xuất:</b> mọi thay đổi <b>tự lưu ngay</b>. Cuối tháng bấm <b>Xuất CSV</b> để gửi kế toán hoặc sao lưu.</div></div>
+    </div>
+    <button class="closebtn" data-close="helpModal">Đã hiểu, bắt đầu dùng</button>
+  </div>
+</div>
+
+<script>
+const HOURS_PER_SHIFT=4, HOURS_PER_DAY=8;
+const WD=["CN","T2","T3","T4","T5","T6","T7"];
+const fmt=n=>new Intl.NumberFormat('vi-VN').format(Math.round(n));
+const pad=n=>String(n).padStart(2,'0');
+const DEFAULT_SETTINGS={mode:'thang',luong:7500000,gio:30000,tc:35000,base:4500000,rate:10.5,otf:'17:00',ott:'21:00'};
+
+let year,month,state;
+const openDays=new Set();
+const cache={};          // dữ liệu các tháng trong phiên (nguồn chân lý)
+let store='unknown';     // 'claude' | 'local' | 'none' | 'unknown'
+let warnedNone=false;
+
+const keyOf=(y,m)=>`salary:${y}-${m}`;
+const hasClaude=()=>{try{return !!(window.storage&&window.storage.set);}catch(e){return false;}};
+function updateBadge(){
+  const b=document.getElementById('saveBadge');
+  if(store==='claude'){b.textContent="● Tự lưu: Claude";b.style.background="rgba(14,203,129,.12)";b.style.color="#0ECB81";}
+  else if(store==='local'){b.textContent="● Tự lưu: thiết bị";b.style.background="rgba(14,203,129,.12)";b.style.color="#0ECB81";}
+  else if(store==='none'){b.textContent="⚠︎ Chỉ lưu phiên này";b.style.background="rgba(246,70,93,.15)";b.style.color="#F6465D";}
+  else{b.textContent="…";}
+}
+async function sSet(key,val){
+  if(hasClaude()){
+    try{
+      await window.storage.set(key,val);
+      if(store!=='claude'){store='claude';updateBadge();}
+      try{localStorage.setItem(key,val);}catch(e){}
+      return true;
+    }catch(e){}
+  }
+  try{
+    localStorage.setItem(key,val);
+    if(store!=='claude'){store='local';updateBadge();}
+    return true;
+  }catch(e){}
+  if(store!=='none'){store='none';updateBadge();}
+  if(!warnedNone){warnedNone=true;
+    toast("⚠️ Máy không tự lưu được — vào Sao lưu để giữ dữ liệu");}
+  return false;
+}
+async function sGet(key){
+  if(hasClaude()){
+    try{
+      const r=await window.storage.get(key);
+      if(r&&r.value!=null){if(store!=='claude'){store='claude';updateBadge();}return r.value;}
+    }catch(e){}
+  }
+  try{
+    const v=localStorage.getItem(key);
+    if(v!=null){if(store!=='claude'){store='local';updateBadge();}return v;}
+  }catch(e){}
+  return null;
+}
+const daysInMonth=(y,m)=>new Date(y,m,0).getDate();
+function defaultDay(y,m,d){const dow=new Date(y,m-1,d).getDay();const w=dow!==0;
+  return {sang:w,chieu:w,late:0,early:0,otFrom:"",otTo:""};}
+function buildDefaultMonth(y,m){const days={};for(let d=1;d<=daysInMonth(y,m);d++)days[d]=defaultDay(y,m,d);
+  return {settings:{...DEFAULT_SETTINGS},days};}
+
+async function loadMonth(y,m){
+  const k=keyOf(y,m);
+  if(cache[k]){
+    const p=cache[k];
+    for(let d=1;d<=daysInMonth(y,m);d++) if(!p.days[d]) p.days[d]=defaultDay(y,m,d);
+    return p;
+  }
+  const v=await sGet(k);
+  if(v){
+    try{
+      const p=JSON.parse(v);
+      for(let d=1;d<=daysInMonth(y,m);d++) if(!p.days[d]) p.days[d]=defaultDay(y,m,d);
+      p.settings={...DEFAULT_SETTINGS,...(p.settings||{})};
+      cache[k]=p; return p;
+    }catch(e){}
+  }
+  const p=buildDefaultMonth(y,m); cache[k]=p; return p;
+}
+let saveTimer=null;
+async function save(){
+  cache[keyOf(year,month)]=state;
+  const ok=await sSet(keyOf(year,month),JSON.stringify(state));
+  if(ok)toast("✓ Đã lưu "+pad(month)+"/"+year);
+}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1100);}
+
+/* ---- calc ---- */
+function dayStatus(y,m,d,dd){const dow=new Date(y,m-1,d).getDay();
+  if(dow===0)return{code:"cn",label:"CN"};
+  if(!dd.sang&&!dd.chieu)return{code:"off",label:"Off"};
+  if(dd.sang&&dd.chieu)return{code:"lam",label:"Làm"};
+  return{code:"half",label:"Nửa ngày"};}
+function otHours(dd){if(!dd.otFrom||!dd.otTo)return 0;
+  const[a,b]=dd.otFrom.split(':').map(Number);const[c,e]=dd.otTo.split(':').map(Number);
+  const diff=(c*60+e)-(a*60+b);return diff>0?diff/60:0;}
+function mainHours(y,m,d,dd){const dow=new Date(y,m-1,d).getDay();if(dow===0)return 0;
+  let h=(dd.sang?HOURS_PER_SHIFT:0)+(dd.chieu?HOURS_PER_SHIFT:0);
+  h-=((+dd.late||0)+(+dd.early||0))/60;return Math.max(0,h);}
+function compute(){
+  const dim=daysInMonth(year,month);let stdDays=0,mainH=0,otH=0;const offs=[];
+  for(let d=1;d<=dim;d++){const dd=state.days[d];const dow=new Date(year,month-1,d).getDay();
+    if(dow!==0)stdDays++;
+    mainH+=mainHours(year,month,d,dd);otH+=otHours(dd);
+    const st=dayStatus(year,month,d,dd);
+    if(st.code==="off")offs.push(`${pad(d)}/${pad(month)} ${WD[dow]}`);
+    else if(st.code==="half")offs.push(`${pad(d)}/${pad(month)} ${WD[dow]} (nửa)`);}
+  const s=state.settings;const stdHours=stdDays*HOURS_PER_DAY;
+  const rateHour = s.mode==='gio' ? (+s.gio||0) : (stdHours>0?s.luong/stdHours:0);
+  const luongChinh=mainH*rateHour, luongTC=otH*(+s.tc||0);
+  const gross=luongChinh+luongTC, bhxh=(+s.base||0)*((+s.rate||0)/100), net=gross-bhxh;
+  return {stdDays,stdHours,mainH,otH,rateHour,luongChinh,luongTC,gross,bhxh,net,offs};
+}
+
+/* ---- render ---- */
+function renderPay(){
+  const c=compute();
+  document.getElementById('netlbl').textContent=`THỰC LÃNH · THÁNG ${pad(month)}/${year}`;
+  document.getElementById('netval').innerHTML=`${fmt(c.net)} <small>đ</small>`;
+  document.getElementById('msGross').textContent=fmt(c.gross)+" đ";
+  document.getElementById('msBhxh').textContent="− "+fmt(c.bhxh)+" đ";
+  document.getElementById('msOt').textContent=c.otH.toFixed(1)+" h";
+  document.getElementById('breakdown').innerHTML=`
+    <div class="brow"><span class="k">Cách tính</span><span class="v">${state.settings.mode==='gio'?'Theo giờ':'Lương tháng'}</span></div>
+    <div class="brow"><span class="k">Ngày công chuẩn</span><span class="v">${c.stdDays} ngày (${c.stdHours}h)</span></div>
+    <div class="brow"><span class="k">Giờ làm chính thực tế</span><span class="v">${c.mainH.toFixed(1)} h</span></div>
+    <div class="brow"><span class="k">Giờ tăng ca</span><span class="v">${c.otH.toFixed(1)} h</span></div>
+    <div class="brow"><span class="k">Đơn giá 1 giờ công</span><span class="v">${fmt(c.rateHour)} đ</span></div>
+    <div class="brow"><span class="k">Lương chính</span><span class="v">${fmt(c.luongChinh)} đ</span></div>
+    <div class="brow"><span class="k">Lương tăng ca</span><span class="v">${fmt(c.luongTC)} đ</span></div>
+    <div class="brow"><span class="k">Tổng lương (gross)</span><span class="v">${fmt(c.gross)} đ</span></div>
+    <div class="brow"><span class="k">Trừ BHXH (${+state.settings.rate}%)</span><span class="v" style="color:var(--red)">− ${fmt(c.bhxh)} đ</span></div>`;
+  const ol=document.getElementById('offlist');
+  ol.textContent=c.offs.length?"Nghỉ / nửa ngày: "+c.offs.join(", "):"";
+}
+const toMin=t=>{const[a,b]=t.split(':').map(Number);return a*60+b;};
+function chipHtml(d){
+  const dd=state.days[d];const st=dayStatus(year,month,d,dd);
+  const lt=(dd.late||dd.early)?` · −${(+dd.late||0)+(+dd.early||0)}′`:"";
+  return `<span class="st ${st.code}" id="chip-${d}">${st.label}${lt}</span>`;
+}
+function otBtnHtml(d){
+  const dd=state.days[d];const h=otHours(dd);
+  return h>0
+    ? `<button class="otbtn on" data-ot="${d}" id="ot-${d}">${dd.otFrom}–${dd.otTo} · ${h.toFixed(1)}h</button>`
+    : `<button class="otbtn" data-ot="${d}" id="ot-${d}">＋ TC</button>`;
+}
+function presetChips(d){
+  const from=state.settings.otf||'17:00';
+  return ['19:00','20:00','21:00','22:00'].map(to=>{
+    const h=((toMin(to)-toMin(from))/60).toFixed(1).replace('.0','');
+    return `<button class="pchip" data-pd="${d}" data-pf="${from}" data-pt="${to}">${from}→${to} (${h}h)</button>`;
+  }).join('');
+}
+function renderDays(){
+  const dim=daysInMonth(year,month);
+  const box=document.getElementById('days');box.innerHTML="";
+  for(let d=1;d<=dim;d++){
+    const dd=state.days[d];const dow=new Date(year,month-1,d).getDay();const isSun=dow===0;
+    const row=document.createElement('div');
+    row.className="day"+(isSun?" sun":"");
+    row.innerHTML=`
+      <div class="dinfo"><div class="dd">${pad(d)}/${pad(month)}</div><div class="wd">${WD[dow]}</div></div>
+      ${isSun?'':`<div class="ck">
+        <label>S<input type="checkbox" data-d="${d}" data-f="sang" ${dd.sang?'checked':''}></label>
+        <label>C<input type="checkbox" data-d="${d}" data-f="chieu" ${dd.chieu?'checked':''}></label>
+      </div>`}
+      ${isSun?'':otBtnHtml(d)}
+      <div class="more">${chipHtml(d)}${isSun?'':`<button class="exp" data-exp="${d}">⋯</button>`}</div>`;
+    box.appendChild(row);
+    if(!isSun){
+      const det=document.createElement('div');
+      det.className="detail"+(openDays.has(d)?" open":"");det.id="det-"+d;
+      det.innerHTML=`
+      <div class="dtitle">TĂNG CA — CHỌN NHANH</div>
+      <div class="presets">${presetChips(d)}</div>
+      <div class="fgrid" style="margin-top:10px">
+        <label>Tăng ca từ<span class="twrap${dd.otFrom?' filled':''}"><input type="time" data-d="${d}" data-f="otFrom" value="${dd.otFrom||''}"><span class="tph">--:--</span></span></label>
+        <label>Tăng ca đến<span class="twrap${dd.otTo?' filled':''}"><input type="time" data-d="${d}" data-f="otTo" value="${dd.otTo||''}"><span class="tph">--:--</span></span></label>
+      </div>
+      <button class="clrot" data-clr="${d}" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer">✕ Xoá giờ tăng ca</button>
+      <div class="dtitle" style="margin-top:14px">ĐI TRỄ / VỀ SỚM (ít dùng)</div>
+      <div class="fgrid">
+        <label>Đi trễ (phút)<input type="number" inputmode="numeric" min="0" data-d="${d}" data-f="late" value="${dd.late||''}" placeholder="0"></label>
+        <label>Về sớm (phút)<input type="number" inputmode="numeric" min="0" data-d="${d}" data-f="early" value="${dd.early||''}" placeholder="0"></label>
+      </div>`;
+      box.appendChild(det);
+    }
+  }
+  box.querySelectorAll('input[type=checkbox]').forEach(el=>{
+    el.addEventListener('change',()=>{state.days[el.dataset.d][el.dataset.f]=el.checked;
+      refreshChip(+el.dataset.d);renderPay();scheduleSave();});
+  });
+  box.querySelectorAll('input[data-f=late],input[data-f=early]').forEach(el=>{
+    el.addEventListener('input',()=>{state.days[el.dataset.d][el.dataset.f]=+el.value||0;
+      refreshChip(+el.dataset.d);renderPay();scheduleSave();});
+  });
+  box.querySelectorAll('input[data-f=otFrom],input[data-f=otTo]').forEach(el=>{
+    el.addEventListener('input',()=>{state.days[el.dataset.d][el.dataset.f]=el.value;
+      el.parentElement.classList.toggle('filled',!!el.value);
+      refreshRow(+el.dataset.d);renderPay();scheduleSave();});
+  });
+  box.querySelectorAll('[data-ot]').forEach(bindOt);
+  box.querySelectorAll('[data-pd]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const d=+b.dataset.pd; const dd=state.days[d];
+      dd.otFrom=b.dataset.pf; dd.otTo=b.dataset.pt;
+      refreshRow(d); renderPay(); scheduleSave();
+      toast("TC "+pad(d)+": "+dd.otFrom+"–"+dd.otTo);});
+  });
+  box.querySelectorAll('[data-clr]').forEach(btn=>{
+    btn.addEventListener('click',()=>{const d=+btn.dataset.clr;
+      state.days[d].otFrom="";state.days[d].otTo="";
+      const det=document.getElementById('det-'+d);
+      det.querySelector('input[data-f=otFrom]').value="";
+      det.querySelector('input[data-f=otTo]').value="";
+      refreshRow(d);renderPay();scheduleSave();toast("Đã xoá giờ TC ngày "+pad(d));});
+  });
+  box.querySelectorAll('[data-exp]').forEach(btn=>{
+    btn.addEventListener('click',()=>{const d=+btn.dataset.exp;
+      const el=document.getElementById('det-'+d);el.classList.toggle('open');
+      el.classList.contains('open')?openDays.add(d):openDays.delete(d);});
+  });
+}
+function refreshChip(d){const old=document.getElementById('chip-'+d);
+  if(old){const tmp=document.createElement('span');tmp.innerHTML=chipHtml(d);old.replaceWith(tmp.firstChild);}}
+function bindOt(el){
+  el.addEventListener('click',()=>{
+    const d=+el.dataset.ot; const dd=state.days[d];
+    if(otHours(dd)>0){
+      const det=document.getElementById('det-'+d);
+      det.classList.add('open'); openDays.add(d);
+    }else{
+      dd.otFrom=state.settings.otf||'17:00'; dd.otTo=state.settings.ott||'21:00';
+      refreshRow(d); renderPay(); scheduleSave();
+      toast("TC "+pad(d)+"/"+pad(month)+": "+dd.otFrom+"–"+dd.otTo);
+    }});
+}
+function refreshRow(d){
+  const pill=document.getElementById('ot-'+d);
+  if(pill){const t=document.createElement('span');t.innerHTML=otBtnHtml(d);
+    const nb=t.firstChild;pill.replaceWith(nb);bindOt(nb);}
+  refreshChip(d);
+  const det=document.getElementById('det-'+d);
+  if(det){const dd=state.days[d];
+    const f=det.querySelector('input[data-f=otFrom]');
+    if(f){f.value=dd.otFrom||'';f.parentElement.classList.toggle('filled',!!dd.otFrom);}
+    const g=det.querySelector('input[data-f=otTo]');
+    if(g){g.value=dd.otTo||'';g.parentElement.classList.toggle('filled',!!dd.otTo);}}
+}
+
+function renderHeader(){document.getElementById('mIn').value=month;document.getElementById('yIn').value=year;
+  document.getElementById('setMonthLbl').textContent=pad(month)+"/"+year;}
+function renderSettings(){
+  s_luong.value=state.settings.luong;s_gio.value=state.settings.gio;s_tc.value=state.settings.tc;
+  s_base.value=state.settings.base;s_rate.value=state.settings.rate;
+  s_otf.value=state.settings.otf||'17:00';s_ott.value=state.settings.ott||'21:00';
+  renderMode();}
+function renderMode(){
+  const gio=state.settings.mode==='gio';
+  document.getElementById('modeThang').classList.toggle('active',!gio);
+  document.getElementById('modeGio').classList.toggle('active',gio);
+  document.getElementById('f_luong').style.display=gio?'none':'flex';
+  document.getElementById('f_gio').style.display=gio?'flex':'none';
+  document.getElementById('modeHint').innerHTML=gio
+    ?'Mọi giờ làm chính × <b>đơn giá giờ thường</b>; giờ tăng ca × đơn giá TC. Phù hợp giai đoạn tính 30k/giờ.'
+    :'Đơn giá giờ = <b>Lương tháng ÷ (ngày công chuẩn × 8h)</b>; tăng ca tính riêng.';}
+document.getElementById('modeThang').addEventListener('click',()=>{
+  state.settings.mode='thang';renderMode();renderPay();scheduleSave();});
+document.getElementById('modeGio').addEventListener('click',()=>{
+  state.settings.mode='gio';
+  if(+state.settings.tc===35000){state.settings.tc=+state.settings.gio||30000;s_tc.value=state.settings.tc;}
+  renderMode();renderPay();scheduleSave();});
+['s_luong','s_gio','s_tc','s_base','s_rate','s_otf','s_ott'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    const map={s_luong:'luong',s_gio:'gio',s_tc:'tc',s_base:'base',s_rate:'rate',s_otf:'otf',s_ott:'ott'};
+    state.settings[map[id]]=(id==='s_otf'||id==='s_ott')?e.target.value:(+e.target.value||0);renderPay();scheduleSave();});
+});
+
+async function switchTo(y,m){year=y;month=m;openDays.clear();
+  state=await loadMonth(y,m);
+  renderHeader();renderSettings();renderDays();renderPay();}
+
+document.getElementById('prev').onclick=()=>{let m=month-1,y=year;if(m<1){m=12;y--;}switchTo(y,m);};
+document.getElementById('next').onclick=()=>{let m=month+1,y=year;if(m>12){m=1;y++;}switchTo(y,m);};
+document.getElementById('mIn').addEventListener('change',e=>{const m=Math.min(12,Math.max(1,+e.target.value||1));switchTo(year,m);});
+document.getElementById('yIn').addEventListener('change',e=>{const y=+e.target.value||year;switchTo(y,month);});
+document.getElementById('btnDet').onclick=()=>{
+  const b=document.getElementById('breakdown');b.classList.toggle('open');
+  document.getElementById('btnDet').textContent=b.classList.contains('open')?"Ẩn chi tiết ▴":"Xem chi tiết ▾";};
+
+/* modals */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.getElementById('btnSet').onclick=()=>openModal('setModal');
+document.getElementById('btnHelp').onclick=()=>openModal('helpModal');
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+document.getElementById('btnFull').onclick=()=>{
+  for(let d=1;d<=daysInMonth(year,month);d++)state.days[d]=defaultDay(year,month,d);
+  openDays.clear();renderDays();renderPay();scheduleSave();toast("Đã đặt lại đủ công");};
+document.getElementById('btnCsv').onclick=()=>{
+  const dim=daysInMonth(year,month);
+  let rows=["Ngay,Thu,Sang,Chieu,Tre(phut),Som(phut),TC tu,TC den,Gio chinh,Gio TC,Trang thai"];
+  for(let d=1;d<=dim;d++){const dd=state.days[d];const dow=new Date(year,month-1,d).getDay();
+    rows.push([`${pad(d)}/${pad(month)}/${year}`,WD[dow],dd.sang?'x':'',dd.chieu?'x':'',
+      dd.late||'',dd.early||'',dd.otFrom||'',dd.otTo||'',
+      mainHours(year,month,d,dd).toFixed(1),otHours(dd).toFixed(1),dayStatus(year,month,d,dd).label].join(','));}
+  const c=compute();
+  rows.push("",`Ngay cong chuan,${c.stdDays}`,`Gio chinh,${c.mainH.toFixed(1)}`,`Gio TC,${c.otH.toFixed(1)}`,
+    `Luong chinh,${fmt(c.luongChinh)}`,`Luong tang ca,${fmt(c.luongTC)}`,`Gross,${fmt(c.gross)}`,
+    `BHXH,${fmt(c.bhxh)}`,`Thuc lanh,${fmt(c.net)}`);
+  const blob=new Blob(["\uFEFF"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`bang_luong_${year}_${pad(month)}.csv`;a.click();toast("Đã xuất CSV");};
+
+/* backup & restore */
+document.getElementById('btnData').onclick=()=>{
+  const s=document.getElementById('storStatus');
+  if(store==='claude')s.innerHTML="Trạng thái: <b style='color:#0ECB81'>tự lưu qua Claude</b>. Sao lưu định kỳ để yên tâm hơn.";
+  else if(store==='local')s.innerHTML="Trạng thái: <b style='color:#0ECB81'>tự lưu trên thiết bị</b> — mở đúng biểu tượng/địa chỉ này là dữ liệu vẫn còn. Sao lưu định kỳ để yên tâm hơn.";
+  else s.innerHTML="Trạng thái: <b style='color:#F6465D'>máy không hỗ trợ tự lưu</b> — dữ liệu chỉ giữ trong phiên này. Cách xử lý triệt để: đưa app lên web rồi cài ra Màn hình chính qua Safari (app sẽ tự lưu vĩnh viễn). Tạm thời: tạo mã sao lưu bên dưới.";
+  openModal('dataModal');};
+async function collectAll(){
+  const months={};
+  if(hasClaude()){
+    try{
+      const res=await window.storage.list('salary:');
+      if(res&&res.keys){
+        for(const k of res.keys){
+          if(k==='salary:helpseen'||k==='salary:ping')continue;
+          const v=await sGet(k);
+          if(v){try{months[k.replace('salary:','')]=JSON.parse(v);}catch(e){}}
+        }
+      }
+    }catch(e){}
+  }
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf('salary:')===0&&k!=='salary:helpseen'&&k!=='salary:ping'){
+        try{months[k.replace('salary:','')]=JSON.parse(localStorage.getItem(k));}catch(e){}
+      }
+    }
+  }catch(e){}
+  for(const k in cache){ if(k==='salary:helpseen')continue;
+    months[k.replace('salary:','')]=cache[k]; }
+  return months;
+}
+document.getElementById('btnMakeBk').onclick=async()=>{
+  const months=await collectAll();
+  bkArea.value=JSON.stringify({app:"bangluong",version:1,exported:new Date().toISOString(),months});
+  toast("Đã tạo mã ("+Object.keys(months).length+" tháng)");};
+document.getElementById('btnCopyBk').onclick=async()=>{
+  if(!bkArea.value){toast("Bấm Tạo mã trước");return;}
+  try{await navigator.clipboard.writeText(bkArea.value);toast("Đã chép vào clipboard");}
+  catch(e){bkArea.select();document.execCommand('copy');toast("Đã chép");}};
+document.getElementById('btnDlBk').onclick=async()=>{
+  if(!bkArea.value){const months=await collectAll();
+    bkArea.value=JSON.stringify({app:"bangluong",version:1,exported:new Date().toISOString(),months});}
+  const blob=new Blob([bkArea.value],{type:"application/json"});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download="bangluong_backup.json";a.click();toast("Đã tải file sao lưu");};
+document.getElementById('btnRestore').onclick=async()=>{
+  let data;try{data=JSON.parse(bkArea.value);}catch(e){toast("Mã không hợp lệ");return;}
+  const months=data.months||data; let n=0;
+  for(const mk in months){
+    if(!months[mk]||!months[mk].days)continue;
+    cache['salary:'+mk]=months[mk];
+    await sSet('salary:'+mk,JSON.stringify(months[mk]));n++;}
+  await switchTo(year,month);
+  toast("Đã khôi phục "+n+" tháng");closeModal('dataModal');};
+
+/* first-run help */
+(async()=>{
+  updateBadge();
+  await sSet('salary:ping','1');
+  const now=new Date();
+  await switchTo(now.getFullYear(),now.getMonth()+1);
+  const seen=await sGet('salary:helpseen');
+  if(!seen){openModal('helpModal');sSet('salary:helpseen','1');}
+})();
+</script>
+</body>
+</html>
