@@ -132,8 +132,8 @@ button{font-family:inherit}
 .detail{display:none;padding:4px 14px 14px 82px;background:#14171c;border-bottom:1px solid #20242b}
 .detail.open{display:block}
 @media(max-width:420px){.detail{padding-left:14px}}
-.dtitle{font-size:11.5px;color:var(--muted);font-weight:800;margin-top:8px;letter-spacing:.3px}
-.presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.dtitle{font-size:11.5px;color:var(--muted);font-weight:800;margin:12px 0 10px;letter-spacing:.3px;line-height:1.2}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .pchip{padding:10px 12px;border-radius:20px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer}
 .pchip:active{background:var(--gold);color:var(--dark);border-color:var(--gold)}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -311,7 +311,7 @@ textarea.bk{width:100%;min-height:110px;background:var(--card);border:1px solid 
     <label>TC mặc định — từ<input id="s_otf" type="time"></label>
     <label>TC mặc định — đến<input id="s_ott" type="time"></label>
   </div>
-  <div class="modehint">Giai đoạn chưa đóng BHXH → đặt <b>Căn cứ = 0</b>.</div>
+  <div class="modehint" id="bhxhHint">Giai đoạn chưa đóng BHXH → đặt <b>Căn cứ = 0</b>.</div>
   <div style="height:1px;background:var(--line);margin:16px 0 12px"></div>
   <div class="dtitle" style="margin-bottom:8px">CÔNG CỤ (khi cần mới dùng)</div>
   <div class="cfrow" style="margin-bottom:10px">
@@ -479,7 +479,7 @@ const Data = (function(){
   async function listMonthKeys(){
     const ks=await Store.keys('salary:');
     Object.keys(cache).forEach(k=>ks.push(k));
-    return [...new Set(ks)].filter(k=>['salary:helpseen','salary:ping','salary:seedV'].indexOf(k)<0);
+    return [...new Set(ks)].filter(k=>/^salary:\d+-\d+$/.test(k));
   }
   async function inheritSettings(y,m){
     const target=y*12+m; let best=null,bestOrd=-1;
@@ -506,24 +506,31 @@ const Data = (function(){
     const v=await Store.get(k); if(v){ try{ const p=JSON.parse(v); cache[k]=p; return p; }catch(e){} }
     return null;
   }
-  async function save(y,m,st){ cache[keyOf(y,m)]=st; return Store.set(keyOf(y,m),JSON.stringify(st)); }
+  async function save(y,m,st){ cache[keyOf(y,m)]=st; const j=JSON.stringify(st); const ok=await Store.set(keyOf(y,m),j); Store.set('bak:'+keyOf(y,m),j); return ok; }
+  async function heal(){ // khôi phục tháng nào bị mất bản chính nhưng còn bản mirror
+    let restored=0;
+    for(const bk of await Store.keys('bak:salary:')){ const real=bk.slice(4);
+      const cur=await Store.get(real); if(cur==null){ const v=await Store.get(bk); if(v){ await Store.set(real,v); restored++; } } }
+    return restored;
+  }
   async function collectAll(){
     const months={};
     for(const k of await Store.keys('salary:')){
-      if(['salary:helpseen','salary:ping','salary:seedV'].indexOf(k)>=0)continue;
+      if(!/^salary:\d+-\d+$/.test(k))continue;
       const v=await Store.get(k); if(v){try{months[k.replace('salary:','')]=JSON.parse(v);}catch(e){}}
     }
-    for(const k in cache){ if(['salary:helpseen','salary:ping','salary:seedV'].indexOf(k)>=0)continue; months[k.replace('salary:','')]=cache[k]; }
+    for(const k in cache){ if(!/^salary:\d+-\d+$/.test(k))continue; months[k.replace('salary:','')]=cache[k]; }
     return months;
   }
-  async function applySeedOnce(){
-    const sv=await Store.get('salary:seedV');
-    if(sv!==CONFIG.SEED_VERSION){
-      for(const mk in SEED){ cache['salary:'+mk]=SEED[mk]; await Store.set('salary:'+mk,JSON.stringify(SEED[mk])); }
-      await Store.set('salary:seedV',CONFIG.SEED_VERSION);
+  async function seedIfEmpty(){ // chỉ nạp mẫu vào tháng TRỐNG; KHÔNG đụng dữ liệu đã có
+    for(const mk in SEED){
+      const key='salary:'+mk;
+      if(cache[key])continue;
+      const cur=await Store.get(key);
+      if(cur==null){ cache[key]=SEED[mk]; await Store.set(key,JSON.stringify(SEED[mk])); Store.set('bak:'+key,JSON.stringify(SEED[mk])); }
     }
   }
-  return { keyOf, daysInMonth, defaultDay, buildDefault, load, get, save, collectAll, applySeedOnce, inheritSettings, cache };
+  return { keyOf, daysInMonth, defaultDay, buildDefault, load, get, save, heal, collectAll, seedIfEmpty, inheritSettings, cache };
 })();
 
 /* ============================================================
@@ -730,7 +737,13 @@ const SettingsDialog = (function(){
     $('s_luong').value=s.luong; $('s_gio').value=s.gio; $('s_tc').value=s.tc;
     $('s_base').value=s.base; $('s_rate').value=s.rate; $('s_thuong').value=s.thuong||0;
     $('s_otf').value=s.otf||'17:00'; $('s_ott').value=s.ott||'21:00';
-    renderMode();
+    renderMode(); updateBhxhHint();
+  }
+  function updateBhxhHint(){
+    const s=State.st.settings, el=$('bhxhHint'); if(!el)return;
+    if((+s.base||0)===0 && (+s.rate||0)>0)
+      el.innerHTML="⚠️ <b style='color:#F6465D'>Căn cứ = 0 nên BHXH = 0.</b> Nhập Căn cứ (VD 4500000) để tính BHXH.";
+    else el.innerHTML="Giai đoạn chưa đóng BHXH → đặt <b>Căn cứ = 0</b>.";
   }
   function renderMode(){
     const gio=State.st.settings.mode==='gio';
@@ -742,7 +755,7 @@ const SettingsDialog = (function(){
     $('btnSet').onclick=()=>{ fill(); UI.openModal('setModal'); };
     Object.keys(map).forEach(id=>$(id).addEventListener('input',e=>{
       State.st.settings[map[id]]=(id==='s_otf'||id==='s_ott')?e.target.value:(parseFloat(String(e.target.value).replace(',','.'))||0);
-      MonthView.renderPay(); MonthView.saveNow();
+      updateBhxhHint(); MonthView.renderPay(); MonthView.saveNow();
     }));
     $('modeThang').addEventListener('click',()=>{State.st.settings.mode='thang';renderMode();MonthView.renderPay();MonthView.saveNow();});
     $('modeGio').addEventListener('click',()=>{State.st.settings.mode='gio';renderMode();MonthView.renderPay();MonthView.saveNow();});
@@ -831,7 +844,7 @@ const Backup = (function(){
     $('btnData').onclick=open;
     $('btnMakeBk').onclick=async()=>{ const months=await Data.collectAll(); $('bkArea').value=JSON.stringify({app:'bangluong',version:1,exported:new Date().toISOString(),months}); UI.toast('Đã tạo mã ('+Object.keys(months).length+' tháng)'); };
     $('btnCopyBk').onclick=async()=>{ if(!$('bkArea').value){UI.toast('Bấm Tạo mã trước');return;} try{await navigator.clipboard.writeText($('bkArea').value);UI.toast('Đã chép');}catch(e){$('bkArea').select();document.execCommand('copy');UI.toast('Đã chép');} };
-    $('btnDlBk').onclick=async()=>{ if(!$('bkArea').value){const months=await Data.collectAll();$('bkArea').value=JSON.stringify({app:'bangluong',version:1,exported:new Date().toISOString(),months});} const b=new Blob([$('bkArea').value],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); const dd=new Date(); a.download='bangluong_backup_'+dd.getFullYear()+pad(dd.getMonth()+1)+pad(dd.getDate())+'.json'; a.click(); UI.toast('Đã tải file'); };
+    $('btnDlBk').onclick=async()=>{ if(!$('bkArea').value){const months=await Data.collectAll();$('bkArea').value=JSON.stringify({app:'bangluong',version:1,exported:new Date().toISOString(),months});} const b=new Blob([$('bkArea').value],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); const dd=new Date(); a.download='bangluong_backup_'+dd.getFullYear()+pad(dd.getMonth()+1)+pad(dd.getDate())+'.json'; a.click(); Store.set('salary:_lastbak',String(Date.now())); UI.toast('Đã tải file'); };
     $('btnPickFile').onclick=()=>$('bkFile').click();
     $('bkFile').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{$('bkArea').value=rd.result;$('btnRestore').click();}; rd.readAsText(f); e.target.value=''; });
     $('btnRestore').onclick=()=>{
@@ -891,10 +904,15 @@ function updateBadge(mode){
   UI.$('btnPdf').onclick=Payslip.open;
   UI.$('btnCsv').onclick=exportCsv;
   await Store.set('salary:ping','1');
-  await Data.applySeedOnce();
+  await Data.heal();          // tự khôi phục tháng mất bản chính từ mirror
+  await Data.seedIfEmpty();   // chỉ điền tháng trống, không ghi đè
   const now=new Date();
   await switchTo(now.getFullYear(), now.getMonth()+1);
   // dialog hôm nay không tự mở; bấm nút "Nhập chấm công hôm nay" khi cần
+  try{
+    const last=+(await Store.get('salary:_lastbak')||0);
+    if(Date.now()-last > 7*864e5){ setTimeout(()=>UI.toast('💾 Nên sao lưu: ⚙︎ Cài đặt → Sao lưu → Tải .json'),1400); }
+  }catch(e){}
 })();
 
 function exportCsv(){
