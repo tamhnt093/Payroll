@@ -449,7 +449,9 @@ const Calc = (function(){
       const dd=st.days[d]||{sang:false,chieu:false,late:0,early:0,otFrom:'',otTo:''};
       const dow=new Date(y,m-1,d).getDay();
       if(dow!==0)stdDays++;
-      mainH+=mainHours(dd); otH+=otHours(dd);
+      const sh=mainHours(dd), ot=otHours(dd);
+      if(dow===0){ otH+=sh+ot; }        // Chủ nhật: giờ ca + OT tự nhập đều tính là tăng ca
+      else { mainH+=sh; otH+=ot; }
       const s=dayStatus(y,m,d,dd);
       if(s.code==='off')offs.push(pad2(d)+'/'+pad2(m)+' '+CONFIG.WD[dow]);
       else if(s.code==='half')offs.push(pad2(d)+'/'+pad2(m)+' '+CONFIG.WD[dow]+' (nửa)');
